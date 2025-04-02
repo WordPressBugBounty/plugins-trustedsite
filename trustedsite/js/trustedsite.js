@@ -51,11 +51,21 @@ jQuery(function() {
     jQuery("#activate-now").click(function() {
         var email_input = jQuery('#email-input').val();
         var domain_input = jQuery('#domain-input').val();
-        var signupUrl = websiteUrl + "/signup?re=" + encodeURIComponent(domain_input)
-                                            + "&email=" + encodeURIComponent(email_input) 
-                                            + "&affId=" + encodeURIComponent(affiliate)
+        var signupUrl = websiteUrl + "/signup?re=" + encodeURIComponent('host:' + new URL(domain_input).host)
+                                            + "&email=" + encodeURIComponent(email_input)
+                                            + "&aff=" + encodeURIComponent(affiliate)
                                             + "&utm_source=wordpress";
         var signupWindow = window.open(signupUrl);
+    });
+    
+    jQuery("#login").click(function() {
+        var email_input = jQuery('#email-input').val();
+        var domain_input = jQuery('#domain-input').val();
+        var loginUrl = websiteUrl + "/login?re=" + encodeURIComponent('host:' + new URL(domain_input).host)
+                                            + "&email=" + encodeURIComponent(email_input)
+                                            + "&aff=" + encodeURIComponent(affiliate)
+                                            + "&utm_source=wordpress";
+        var signupWindow = window.open(loginUrl);
     });
 
     function setLinkText($el, linkText) {
@@ -333,7 +343,7 @@ jQuery(function() {
     }
     
     function refresh() {
-        jQuery.getJSON(apiUrl + "&cache=" + new Date().getMinutes(), function(data) {
+        jQuery.getJSON(apiUrl + "&cache=" + new Date().getTime(), function(data) {
             $loadSection.hide();
             var status = data['success'];
             if (status == '0') {

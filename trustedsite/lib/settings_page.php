@@ -32,7 +32,7 @@ Sorry, we have encountered an error loading your TrustedSite dashboard. If you h
 <h1>TrustedSite</h1>
 <br/>
 <div id="signup-header">Your Account</div>
-<div id="signup-text">To activate the app, please create your TrustedSite account. </div>
+<div id="signup-text">To activate TrustedSite, please create your TrustedSite account. </div>
 
 <form>
 <span id="email">Email
@@ -42,7 +42,7 @@ Sorry, we have encountered an error loading your TrustedSite dashboard. If you h
 <input type="button" value="Create Account" id="activate-now">
 </form>
 <br>
-<div class="signup-text">Already have an account? <a href="https://www.trustedsite.com/login">Log in</a> and add your site.</div>
+<div class="signup-text">Already have an account? <a href id="login">Log in</a> and add your site.</div>
 </div>
 
 <div id="trustedsite-dashboard">
