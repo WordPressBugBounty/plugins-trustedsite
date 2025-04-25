@@ -18,6 +18,7 @@ jQuery(function() {
     if (!email) { email = ''; }
 
     var affiliate = 221269;
+    var affiliate_godaddy = 1899750;
 
     var apiBase = 'https://cdn.trustedsite.com';
     var apiUrl = apiBase + '/api/v2/site-lookup.json?host=' + encodeURIComponent(host);
@@ -53,7 +54,7 @@ jQuery(function() {
         var domain_input = jQuery('#domain-input').val();
         var signupUrl = websiteUrl + "/signup?re=" + encodeURIComponent('host:' + new URL(domain_input).host)
                                             + "&email=" + encodeURIComponent(email_input)
-                                            + "&aff=" + encodeURIComponent(affiliate)
+                                            + "&aff=" + encodeURIComponent(detectGodaddyDashboard() ? affiliate_godaddy : affiliate)
                                             + "&utm_source=wordpress";
         var signupWindow = window.open(signupUrl);
     });
@@ -63,10 +64,20 @@ jQuery(function() {
         var domain_input = jQuery('#domain-input').val();
         var loginUrl = websiteUrl + "/login?re=" + encodeURIComponent('host:' + new URL(domain_input).host)
                                             + "&email=" + encodeURIComponent(email_input)
-                                            + "&aff=" + encodeURIComponent(affiliate)
+                                            + "&aff=" + encodeURIComponent(detectGodaddyDashboard() ? affiliate_godaddy : affiliate)
                                             + "&utm_source=wordpress";
         var signupWindow = window.open(loginUrl);
     });
+    
+    function detectGodaddyDashboard() {
+        var menuItemsSide = document.getElementsByClassName('wp-menu-name');
+        for (let menuItem of menuItemsSide) if(menuItem.textContent === 'GoDaddy') return true;
+        
+        var menuItemsTop = document.getElementsByClassName('ab-label');
+        for (let menuItem of menuItemsTop) if(menuItem.textContent === 'GoDaddy Quick Links') return true;
+        
+        return false;
+    }
 
     function setLinkText($el, linkText) {
         $el.find(".link").html(linkText);
