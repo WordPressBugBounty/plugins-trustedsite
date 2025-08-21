@@ -10,6 +10,8 @@ class Trustedsite {
         } else {
             update_option('trustedsite_robots_enable', 0);
         }
+        
+        Trustedsite::ping_event('install');
     }
 
     public static function scripts($hook) {
@@ -120,8 +122,6 @@ class Trustedsite {
                 Trustedsite::install_woocommerce();
             }
         }
-        
-        Trustedsite::ping_event('install');
     }
 
     public static function robots() {
