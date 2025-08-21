@@ -1,10 +1,8 @@
 <?php
 defined('ABSPATH') OR exit;
 
-class Trustedsite
-{
-    public static function activate()
-    {
+class Trustedsite {
+    public static function activate() {
         update_option('trustedsite_active', 1);
         
         if(Trustedsite::get_sitemap_active() == true) {
@@ -14,7 +12,7 @@ class Trustedsite
         }
     }
 
-    public static function scripts($hook){
+    public static function scripts($hook) {
         if (strpos($hook, "trustedsite-settings") !== false) {
             wp_enqueue_style('trustedsite-settings-fa', plugins_url('../css/font-awesome.min.css',__FILE__));
             wp_enqueue_style('trustedsite-settings-css', plugins_url('../css/settings.css',__FILE__));
@@ -33,7 +31,7 @@ class Trustedsite
         return $response;
     }
 
-    public static function get_site_id(){
+    public static function get_site_id() {
         $existing_site_id = get_option('trustedsite_site_id');
         if (!empty($existing_site_id)) {
             return $existing_site_id;
@@ -56,6 +54,7 @@ class Trustedsite
 
         if (is_array($response) && !is_wp_error($response)) {
             $rjson = json_decode($response['body'], true);
+            if ($rjson['success'] == 0) return false;
             $sitemap = $rjson['sitemap'];
             $status = $sitemap['status'];
             if ($status == 'active') return true;
@@ -65,9 +64,35 @@ class Trustedsite
         return false;
     }
 
+    public static function ping_event($name) {
+        $id = get_option('trustedsite_id');
+        if ( ! $id ) {
+           $id = wp_generate_uuid4();
+           update_option('trustedsite_id', $id);
+         }
+         $response = wp_remote_post('https://www.trustedsite.com/rpc/wordpress', [
+             'timeout' => 5,
+             'body'    => [
+                 'do'       => 'event',
+                 'id'       => $id,
+                 'name'     => $name,
+                 'site_url' => site_url(),
+                 'home_url' => home_url(),
+                 'email'    => get_option('admin_email'),
+                 'version'  => TRUSTEDSITE_VERSION
+             ],
+         ]);
+    }
+    
+    public static function ping_siteurl_change() {
+        Trustedsite::ping_event('siteurl_change');
+    }
+    
+    public static function ping_admin_email_change() {
+        Trustedsite::ping_event('admin_email_change');
+    }
 
-    public static function install()
-    {
+    public static function install() {
         add_shortcode('mcafeesecure', 'Trustedsite::mfes_engagement_trustmark_shortcode');
         add_shortcode('trustedsite', 'Trustedsite::ts_engagement_trustmark_shortcode');
         add_shortcode('trustedsite_form', 'Trustedsite::ts_form_engagement_trustmark_shortcode');
@@ -83,6 +108,9 @@ class Trustedsite
 
         add_action('admin_menu', 'Trustedsite::admin_menus');
         add_action('admin_enqueue_scripts', 'Trustedsite::scripts');
+        add_action('update_option_siteurl', 'Trustedsite::ping_siteurl_change');
+        add_action('update_option_admin_email', 'Trustedsite::ping_admin_email_change');
+        
         add_filter('plugin_action_links_trustedsite/trustedsite.php', 'Trustedsite::add_plugin_settings_link');
 
         if (get_option('mcafeesecure_active') === false) {
@@ -92,9 +120,11 @@ class Trustedsite
                 Trustedsite::install_woocommerce();
             }
         }
+        
+        Trustedsite::ping_event('install');
     }
 
-    public static function robots(){
+    public static function robots() {
         if (get_option('trustedsite_robots_enable') == 1) {
             $site_id = Trustedsite::get_site_id();
             if(!empty($site_id)){
@@ -104,7 +134,6 @@ class Trustedsite
     }
     
     public static function inject_sip_modal($order_id) {
-
         $order = wc_get_order($order_id);
         $email = $order->get_billing_email();
         $first_name = $order->get_billing_first_name();
@@ -132,26 +161,26 @@ class Trustedsite
 EOT;
     }
 
-    public static function install_woocommerce()
-    {
+    public static function install_woocommerce() {
         add_action('woocommerce_thankyou', 'Trustedsite::inject_sip_modal');
     }
 
-    public static function deactivate()
-    {
+    public static function deactivate() {
         delete_option("trustedsite_active");
+        
+        Trustedsite::ping_event('deactivate');
     }
 
-    public static function uninstall()
-    {
+    public static function uninstall() {
         delete_option("trustedsite_active");
         delete_option("trustedsite_data");
         delete_option("trustedsite_site_id");
         delete_option("trustedsite_robots_enable");
+        
+        Trustedsite::ping_event('uninstall');
     }
 
-    public static function mfes_engagement_trustmark_shortcode($atts = array())
-    {
+    public static function mfes_engagement_trustmark_shortcode($atts = array()) {
         $a = shortcode_atts(array(
             'width' => 90,
         ), $atts);
@@ -160,8 +189,7 @@ EOT;
         return "<div class='mfes-trustmark' data-type='102' data-width=" . $width . " data-ext='svg'></div>";
     }
 
-    public static function ts_engagement_trustmark_shortcode($atts = array())
-    {
+    public static function ts_engagement_trustmark_shortcode($atts = array()) {
         $a = shortcode_atts(array(
             'width' => 90,
         ), $atts);
@@ -170,8 +198,7 @@ EOT;
         return "<div class='trustedsite-trustmark' data-type='202' data-width=" . $width . " data-ext='svg'></div>";
     }
 
-    public static function ts_form_engagement_trustmark_shortcode($atts = array())
-    {
+    public static function ts_form_engagement_trustmark_shortcode($atts = array()) {
         $a = shortcode_atts(array(
             'width' => 90,
         ), $atts);
@@ -180,8 +207,7 @@ EOT;
         return "<div class='trustedsite-trustmark' data-type='211' data-width=" . $width . " data-ext='svg'></div>";
     }
 
-    public static function ts_checkout_engagement_trustmark_shortcode($atts = array())
-    {
+    public static function ts_checkout_engagement_trustmark_shortcode($atts = array()) {
         $a = shortcode_atts(array(
             'width' => 90,
         ), $atts);
@@ -190,8 +216,7 @@ EOT;
         return "<div class='trustedsite-trustmark' data-type='212' data-width=" . $width . " data-ext='svg'></div>";
     }
 
-    public static function ts_login_engagement_trustmark_shortcode($atts = array())
-    {
+    public static function ts_login_engagement_trustmark_shortcode($atts = array()) {
         $a = shortcode_atts(array(
             'width' => 90,
         ), $atts);
@@ -200,8 +225,7 @@ EOT;
         return "<div class='trustedsite-trustmark' data-type='213' data-width=" . $width . " data-ext='svg'></div>";
     }
 
-    public static function mfes_sip_trustmark_shortcode($atts = array())
-    {
+    public static function mfes_sip_trustmark_shortcode($atts = array()) {
         $a = shortcode_atts(array(
             'width' => 90,
         ), $atts);
@@ -210,9 +234,7 @@ EOT;
         return "<div class='mfes-trustmark' data-type='103' data-width=" . $width . " data-ext='svg'></div>";
     }
 
-    public static function ts_sip_legacy_shortcode($atts = array())
-    {
-
+    public static function ts_sip_legacy_shortcode($atts = array()) {
         $a = shortcode_atts(array(
             'width' => 90,
         ), $atts);
@@ -221,9 +243,7 @@ EOT;
         return"<div class='trustedsite-trustmark' data-type='203' data-width=" . $width . " data-ext='svg'></div>";
     }
 
-    public static function ts_sip_shortcode($atts = array())
-    {
-
+    public static function ts_sip_shortcode($atts = array()) {
         $a = shortcode_atts(array(
             'width' => 90,
         ), $atts);
@@ -232,9 +252,7 @@ EOT;
         return"<div class='trustedsite-trustmark' data-type='204' data-width=" . $width . " data-ext='svg'></div>";
     }
     
-    public static function ts_banner_shortcode($atts = array())
-    {
-
+    public static function ts_banner_shortcode($atts = array()) {
         $a = shortcode_atts(array(
             'width' => '0',
         ), $atts);
@@ -243,9 +261,7 @@ EOT;
         return"<div class='trustedsite-trustmark' data-type='1001' data-width=" . $width . "></div>";
     }
     
-    public static function ts_testimonial_shortcode($atts = array())
-    {
-
+    public static function ts_testimonial_shortcode($atts = array()) {
         $a = shortcode_atts(array(
             'width' => '0',
             'height' => '0',
@@ -257,36 +273,31 @@ EOT;
         return"<div class='trustedsite-trustmark' data-type='1002' data-width=" . $width . " data-height=" . $height . "></div>";
     }
 
-    public static function hide_floating_trustmark_shortcode($atts = array())
-    {
+    public static function hide_floating_trustmark_shortcode($atts = array()) {
         return "<div class='trustedsite-tm-float-disable'></div>";
     }
 
-    public static function admin_menus()
-    {
+    public static function admin_menus() {
 
         add_options_page(
-            'TrustedSite', 
-            'TrustedSite', 
-            'activate_plugins', 
-            'trustedsite-settings', 
+            'TrustedSite',
+            'TrustedSite',
+            'activate_plugins',
+            'trustedsite-settings',
             'Trustedsite::settings_page');
 
     }
 
-    public static function add_plugin_settings_link( $links )
-    {
+    public static function add_plugin_settings_link($links) {
         array_unshift( $links, '<a href="options-general.php?page=trustedsite-settings">Settings</a>' );
         return $links;
     }
 
-    public static function settings_page()
-    {
+    public static function settings_page() {
         require WP_PLUGIN_DIR . '/trustedsite/lib/settings_page.php';
     }
 
-    public static function inject_code()
-    {
+    public static function inject_code() {
         echo <<<EOT
             <script type="text/javascript">
               (function() {
@@ -296,7 +307,7 @@ EOT;
               })();
             </script>
 EOT;
-	}
+    }
 }
 
 ?>

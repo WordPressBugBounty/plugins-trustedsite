@@ -2,8 +2,8 @@
 Contributors: pathdefenderben
 Tags: trust badge, trustmark, trust seal, security, social proof
 Requires at least: 4.2.1
-Tested up to: 6.7.2
-Stable tag: 1.2.2
+Tested up to: 6.8.2
+Stable tag: 1.2.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -94,6 +94,9 @@ TrustedSite Certification Pro pricing is based on usage and how many visits your
 
 == Changelog ==
 
+= 1.2.3 =
+* Improved onboarding process
+
 = 1.2.2 =
 * Improved onboarding support for GoDaddy Wordpress users
 
@@ -112,6 +115,3 @@ TrustedSite Certification Pro pricing is based on usage and how many visits your
 
 = 1.1.0 =
 * Revamped dashboard
-
-= 1.0.8 =
-* Dashboard improvements
