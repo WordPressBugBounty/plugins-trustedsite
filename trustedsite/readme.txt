@@ -3,7 +3,7 @@ Contributors: pathdefenderben
 Tags: trust badge, trustmark, trust seal, security, social proof
 Requires at least: 4.2.1
 Tested up to: 6.8.2
-Stable tag: 1.2.4
+Stable tag: 1.2.5
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -94,6 +94,9 @@ TrustedSite Certification Pro pricing is based on usage and how many visits your
 
 == Changelog ==
 
+= 1.2.5 =
+* Bug fix
+
 = 1.2.4 =
 * Bug fix
 
@@ -113,6 +116,4 @@ TrustedSite Certification Pro pricing is based on usage and how many visits your
 = 1.1.2 =
 * Various improvements
 
-= 1.1.1 =
-* Various improvements
 

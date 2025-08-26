@@ -11,7 +11,7 @@ class Trustedsite {
             update_option('trustedsite_robots_enable', 0);
         }
         
-        Trustedsite::ping_event('install');
+        Trustedsite::ping_event('activate');
     }
 
     public static function scripts($hook) {
@@ -122,6 +122,11 @@ class Trustedsite {
                 Trustedsite::install_woocommerce();
             }
         }
+        
+        if (!get_option('trustedsite_install_ping_done')) {
+            Trustedsite::ping_event('install');
+            update_option('trustedsite_install_ping_done', 1);
+        }
     }
 
     public static function robots() {
@@ -176,6 +181,7 @@ EOT;
         delete_option("trustedsite_data");
         delete_option("trustedsite_site_id");
         delete_option("trustedsite_robots_enable");
+        delete_option("trustedsite_install_ping_done");
         
         Trustedsite::ping_event('uninstall');
     }

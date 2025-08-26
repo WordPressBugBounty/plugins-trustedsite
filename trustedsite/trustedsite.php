@@ -4,19 +4,19 @@ defined( 'ABSPATH' ) OR exit;
 /**
  * ------------------------------------------------------------------------------------------------------------------
  * @package trustedsite
- * @version 1.2.4
+ * @version 1.2.5
  * Plugin Name: TrustedSite
  * Plugin URI: https://www.trustedsite.com/
  * Description: Display TrustedSite trustmarks on your website to increase visitor confidence and conversion rates.
  * Author: TrustedSite
- * Version: 1.2.4
+ * Version: 1.2.5
  * ------------------------------------------------------------------------------------------------------------------
  */
 
 if(defined('WP_INSTALLING') && WP_INSTALLING){
     return;
 }
-define('TRUSTEDSITE_VERSION', '1.2.4');
+define('TRUSTEDSITE_VERSION', '1.2.5');
 
 add_action('activated_plugin','trustedsite_save_activation_error');
 function trustedsite_save_activation_error(){
