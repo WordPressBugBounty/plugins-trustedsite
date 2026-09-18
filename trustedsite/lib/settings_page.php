@@ -1,48 +1,69 @@
 <?php
     defined('ABSPATH') OR exit;
     
-    $email = get_option( 'admin_email' );
-    $arrHost = parse_url(home_url('', $scheme = 'http'));
-    $host = $arrHost['host'];
+    if ( ! current_user_can( 'activate_plugins' ) ) {
+        wp_die( esc_html__( 'You do not have sufficient permissions to modify these settings.', 'trustedsite' ) );
+    }
+    
+    if ( isset( $_POST['do'] ) ) {
+        if ( ! isset( $_POST['trustedsite_settings_nonce'] ) || ! wp_verify_nonce( $_POST['trustedsite_settings_nonce'], 'trustedsite_save_action' ) ) {
+            wp_die( esc_html__( 'Security check failed. Please refresh and try again.', 'trustedsite' ) );
+        }
+
+        if ( 'sitemap_enable' === $_POST['do'] ) {
+            update_option( 'trustedsite_robots_enable', 1 );
+        } elseif ( 'sitemap_disable' === $_POST['do'] ) {
+            update_option( 'trustedsite_robots_enable', 0 );
+        }
+    }
+    
+    $email    = sanitize_email( get_option( 'admin_email' ) );
+    $site_url = esc_url_raw( get_option( 'siteurl' ) );
+    $arrHost  = parse_url( home_url( '', 'http' ) );
+    $host     = isset( $arrHost['host'] ) ? sanitize_text_field( $arrHost['host'] ) : '';
     
     $endpoint = "https://www.trustedsite.com";
-
-    if (isset($_POST['do']) && $_POST['do'] == 'sitemap_enable') {
-        update_option('trustedsite_robots_enable', 1);
-    }
-    if (isset($_POST['do']) && $_POST['do'] == 'sitemap_disable') {
-        update_option('trustedsite_robots_enable', 0);
-    }
-    ?>
+?>
 
 <div class="wrap" id="trustedsite-container">
 
-<div id="trustedsite-data" data-host="<?php echo $host; ?>" data-email="<?php echo $email; ?>"></div>
+<div id="trustedsite-data" data-host="<?php echo esc_attr( $host ); ?>" data-email="<?php echo esc_attr( $email ); ?>"></div>
 
 <div id="trustedsite-load" class="lds-ring">
 <div class="lds-ring"></div>
 </div>
 
 <div id="trustedsite-error">
-<h1>TrustedSite</h1>
-Sorry, we have encountered an error loading your TrustedSite dashboard. If you have just activated your account, please allow up to a few minutes and try again. Otherwise, feel free to contact <a href="https://support.trustedsite.com">TrustedSite Support</a>.
+<h1><?php esc_html_e( 'TrustedSite', 'trustedsite' ); ?></h1>
+<p><?php esc_html_e( 'Sorry, we have encountered an error loading your TrustedSite dashboard. If you have just activated your account, please allow up to a few minutes and try again. Otherwise, feel free to contact', 'trustedsite' ); ?>
+<a href="<?php echo esc_url( 'https://support.trustedsite.com' ); ?>"><?php esc_html_e( 'TrustedSite Support', 'trustedsite' ); ?></a>.</p>
 </div>
 
 <div id="trustedsite-activation">
-<h1>TrustedSite</h1>
+<h1><?php esc_html_e( 'TrustedSite', 'trustedsite' ); ?></h1>
 <br/>
-<div id="signup-header">Your Account</div>
-<div id="signup-text">To activate TrustedSite, please create your TrustedSite account. </div>
+<div id="signup-header"><?php esc_html_e( 'Your Account', 'trustedsite' ); ?></div>
+<div id="signup-text"><?php esc_html_e( 'To activate TrustedSite, please create your TrustedSite account.', 'trustedsite' ); ?></div>
 
-<form>
-<span id="email">Email
-<input id="email-input" class="ts-input" type="text" name="email" value="<?php echo get_option('admin_email')?>"></span><br>
-<span id="domain">Domain
-<input id="domain-input" class="ts-input" type="text" name="domain" value="<?php echo get_option('siteurl')?>"></span><br><br>
-<input type="button" value="Create Account" id="activate-now">
+<form method="POST" action="">
+<!-- Generates implicit tracking hidden fields for CSRF defenses -->
+<?php wp_nonce_field( 'trustedsite_save_action', 'trustedsite_settings_nonce' ); ?>
+
+<span id="email">
+<?php esc_html_e( 'Email', 'trustedsite' ); ?>
+<input id="email-input" class="ts-input" type="text" name="email" value="<?php echo esc_attr( $email ); ?>">
+</span><br>
+
+<span id="domain">
+<?php esc_html_e( 'Domain', 'trustedsite' ); ?>
+<input id="domain-input" class="ts-input" type="text" name="domain" value="<?php echo esc_attr( $site_url ); ?>">
+</span><br><br>
+
+<input type="button" value="<?php esc_attr_e( 'Create Account', 'trustedsite' ); ?>" id="activate-now">
 </form>
 <br>
-<div class="signup-text">Already have an account? <a href id="login">Log in</a> and add your site.</div>
+<div class="signup-text"><?php esc_html_e( 'Already have an account?', 'trustedsite' ); ?> <a href="#" id="login"><?php esc_html_e( 'Log in', 'trustedsite' ); ?></a> <?php esc_html_e( 'and add your site.', 'trustedsite' ); ?></div>
+</div>
 </div>
 
 <div id="trustedsite-dashboard">
@@ -159,7 +180,7 @@ Trustmarks
 Floating
 </div>
 <div class="ts-img">
-<img class="img-preview" src="<?php echo plugins_url('../images/preview-64-floating.png',__FILE__)?>" >
+<img class="img-preview" src="<?php echo esc_url( plugins_url('../images/preview-64-floating.png',__FILE__) )?>" >
 <div class="ts-arrow">
 <i class="fa fa-angle-right"></i>
 </div>
@@ -172,7 +193,7 @@ Floating
 Engagement
 </div>
 <div class="ts-img">
-<img class="img-preview" src="<?php echo plugins_url('../images/preview-64-engagement.png',__FILE__)?>" >
+<img class="img-preview" src="<?php echo esc_url( plugins_url('../images/preview-64-engagement.png',__FILE__) )?>" >
 <div class="ts-arrow">
 <i class="fa fa-angle-right"></i>
 </div>
@@ -185,7 +206,7 @@ Engagement
 Shopper Identity Protection
 </div>
 <div class="ts-img">
-<img class="img-preview" src="<?php echo plugins_url('../images/preview-64-sip.png',__FILE__)?>" >
+<img class="img-preview" src="<?php echo esc_url( plugins_url('../images/preview-64-sip.png',__FILE__) )?>" >
 <div class="ts-arrow">
 <i class="fa fa-angle-right"></i>
 </div>
@@ -198,7 +219,7 @@ Shopper Identity Protection
 Testimonials
 </div>
 <div class="ts-img">
-<img class="img-preview" src="<?php echo plugins_url('../images/preview-64-testimonials.png',__FILE__)?>" >
+<img class="img-preview" src="<?php echo esc_url( plugins_url('../images/preview-64-testimonials.png',__FILE__) )?>" >
 <div class="ts-arrow">
 <i class="fa fa-angle-right"></i>
 </div>
@@ -211,7 +232,7 @@ Testimonials
 Banner
 </div>
 <div class="ts-img">
-<img class="img-preview" src="<?php echo plugins_url('../images/preview-64-banner.png',__FILE__)?>" >
+<img class="img-preview" src="<?php echo esc_url( plugins_url('../images/preview-64-banner.png',__FILE__) )?>" >
 <div class="ts-arrow">
 <i class="fa fa-angle-right"></i>
 </div>
@@ -264,8 +285,8 @@ Complete Directory Listing
 </div>
 
 <div class="row row-last row-txt no-arrow">
-<form action="<?php echo $endpoint ?>/user/site/<?php echo $host ?>/" method="get" target="_blank">
-<button class="ts-button" type="submit">Manage Account</button>
+<form action="<?php echo esc_url( $endpoint . '/user/site/' . $host . '/' ); ?>" method="get" target="_blank">
+<button class="ts-button" type="submit"><?php esc_html_e( 'Manage Account', 'trustedsite' ); ?></button>
 </form>
 </div>
 
@@ -279,8 +300,8 @@ Upgrade to Pro
 </div>
 
 <div class="row no-arrow">
-<script src="//fast.wistia.com/embed/medias/h04o4ou8tz.jsonp" async></script>
-<script src="//fast.wistia.com/assets/external/E-v1.js" async></script>
+<script src="https://fast.wistia.com/embed/medias/h04o4ou8tz.jsonp" async></script>
+<script src="https://fast.wistia.com/assets/external/E-v1.js" async></script>
 <div class="wistia_embed wistia_async_h04o4ou8tz" id="ts-video">&nbsp;</div>
 
 </div>
@@ -291,7 +312,7 @@ Get our full suite of trust-building tools and start boosting sales today.
 </div>
 <br>
 <div>
-<form action="<?php echo $endpoint ?>/user/site/<?php echo $host ?>/upgrade" method="get" target="_blank">
+<form action="<?php echo esc_url( $endpoint . '/user/site/' . $host . '/upgrade' ); ?>" method="get" target="_blank">
 <button class="ts-button" type="submit">Upgrade Now</button>
 </form>
 </div>
@@ -346,28 +367,30 @@ Diagnostics
 
 <div class="row row-txt ts-title">
 <span class="status-icon"></span>
-<?php if (get_option('trustedsite_robots_enable') == 1): ?>
-Sitemap
+<?php if ( intval( get_option( 'trustedsite_robots_enable' ) ) === 1 ): ?>
+<?php esc_html_e( 'Sitemap', 'trustedsite' ); ?>
 <?php else: ?>
-Enable Sitemap
-<?php endif ?>
+<?php esc_html_e( 'Enable Sitemap', 'trustedsite' ); ?>
+<?php endif; ?>
 </div>
 
 <div class="row row-last row-txt no-arrow">
 <div>
-<?php if (get_option('trustedsite_robots_enable') == 1): ?>
-Your sitemap for Search Submission is enabled.
+<?php if ( intval( get_option( 'trustedsite_robots_enable' ) ) === 1 ): ?>
+<?php esc_html_e( 'Your sitemap for Search Submission is enabled.', 'trustedsite' ); ?>
 <?php else: ?>
-Automatically enable your sitemap in robots.txt to help search engines find more of your content with Search Submission.
-<?php endif ?>
+<?php esc_html_e( 'Automatically enable your sitemap in robots.txt to help search engines find more of your content with Search Submission.', 'trustedsite' ); ?>
+<?php endif; ?>
 </div>
 <br>
-<form action="options-general.php?page=trustedsite-settings" method="post">
-<?php if (get_option('trustedsite_robots_enable') == 1): ?>
-<button class="ts-button" name="do" value="sitemap_disable" type="submit">Disable Sitemap</button>
+
+<form action="<?php echo esc_url( admin_url( 'options-general.php?page=trustedsite-settings' ) ); ?>" method="post">
+<?php wp_nonce_field( 'trustedsite_save_action', 'trustedsite_settings_nonce' ); ?>
+<?php if ( intval( get_option( 'trustedsite_robots_enable' ) ) === 1 ): ?>
+<button class="ts-button" name="do" value="sitemap_disable" type="submit"><?php esc_html_e( 'Disable Sitemap', 'trustedsite' ); ?></button>
 <?php else: ?>
-<button class="ts-button" name="do" value="sitemap_enable" type="submit">Enable Sitemap</button>
-<?php endif ?>
+<button class="ts-button" name="do" value="sitemap_enable" type="submit"><?php esc_html_e( 'Enable Sitemap', 'trustedsite' ); ?></button>
+<?php endif; ?>
 </form>
 </div>
 

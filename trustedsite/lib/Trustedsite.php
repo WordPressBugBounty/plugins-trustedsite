@@ -43,7 +43,7 @@ class Trustedsite {
         
         if (is_array($response) && !is_wp_error($response)) {
             $rjson = json_decode($response['body'], true);
-            $site_id = $rjson['site_id'];
+            $site_id = sanitize_text_field( $rjson['site_id'] );
             update_option('trustedsite_site_id', $site_id);
             return $site_id;
         }
@@ -54,6 +54,25 @@ class Trustedsite {
     public static function get_sitemap_active() {
         $response = Trustedsite::get_api_response();
 
+        if ( is_array( $response ) && ! is_wp_error( $response ) ) {
+            $rjson = json_decode( $response['body'], true );
+            
+            if ( ! is_array( $rjson ) || isset( $rjson['success'] ) && $rjson['success'] == 0 ) {
+                return false;
+            }
+            
+            if ( isset( $rjson['sitemap'] ) && is_array( $rjson['sitemap'] ) ) {
+                $sitemap = $rjson['sitemap'];
+                $status  = isset( $sitemap['status'] ) ? $sitemap['status'] : '';
+                
+                if ( 'active' === $status ) {
+                    return true;
+                }
+            }
+        }
+     
+        return false;
+        
         if (is_array($response) && !is_wp_error($response)) {
             $rjson = json_decode($response['body'], true);
             if ($rjson['success'] == 0) return false;
@@ -78,9 +97,9 @@ class Trustedsite {
                  'do'       => 'event',
                  'id'       => $id,
                  'name'     => $name,
-                 'site_url' => site_url(),
-                 'home_url' => home_url(),
-                 'email'    => get_option('admin_email'),
+                 'site_url' => esc_url_raw( site_url() ),
+                 'home_url' => esc_url_raw( home_url() ),
+                 'email'    => sanitize_email( get_option('admin_email') ),
                  'version'  => TRUSTEDSITE_VERSION
              ],
          ]);
@@ -115,12 +134,10 @@ class Trustedsite {
         
         add_filter('plugin_action_links_trustedsite/trustedsite.php', 'Trustedsite::add_plugin_settings_link');
 
-        if (get_option('mcafeesecure_active') === false) {
+        if ( ! get_option( 'mcafeesecure_active' ) ) {
             add_action('do_robots', 'Trustedsite::robots');
             add_action('wp_footer', 'Trustedsite::inject_code');
-            if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_option('active_plugins')))) {
-                Trustedsite::install_woocommerce();
-            }
+            add_action( 'woocommerce_thankyou', 'Trustedsite::inject_sip_modal' );
         }
         
         if (!get_option('trustedsite_install_ping_done')) {
@@ -130,60 +147,59 @@ class Trustedsite {
     }
 
     public static function robots() {
-        if (get_option('trustedsite_robots_enable') == 1) {
+        if ( intval( get_option( 'trustedsite_robots_enable' ) ) === 1 ) {
             $site_id = Trustedsite::get_site_id();
-            if(!empty($site_id)){
-                echo "\nSitemap: https://cdn.ywxi.net/sitemap/".$site_id."/1.xml\n";
+
+            if ( ! empty( $site_id ) ) {
+                echo "\nSitemap: https://cdn.ywxi.net/sitemap/"
+                    . sanitize_key( $site_id )
+                    . "/1.xml\n";
             }
         }
     }
     
     public static function inject_sip_modal($order_id) {
         $order = wc_get_order($order_id);
-        $email = $order->get_billing_email();
-        $first_name = $order->get_billing_first_name();
-        $last_name = $order->get_billing_last_name();
-        $country_code = $order->get_billing_country();
-        $state_code = $order->get_billing_state();
+        $email = sanitize_email($order->get_billing_email());
+        $first_name = sanitize_text_field($order->get_billing_first_name());
+        $last_name = sanitize_text_field($order->get_billing_last_name());
+        $country_code = sanitize_text_field($order->get_billing_country());
+        $state_code = sanitize_text_field($order->get_billing_state());
 
-        echo <<<EOT
-            <script type="text/javascript">
-                (function() {
-                    var sipScript = document.createElement('script');
-                    sipScript.setAttribute("class","trustedsite-track-conversion");
-                    sipScript.setAttribute("type","text/javascript");
-                    sipScript.setAttribute("data-type","purchase");
-                    sipScript.setAttribute("data-orderid", "$order_id");
-                    sipScript.setAttribute("data-email", "$email");
-                    sipScript.setAttribute("data-firstname", "$first_name");
-                    sipScript.setAttribute("data-lastname", "$last_name");
-                    sipScript.setAttribute("data-country", "$country_code");
-                    sipScript.setAttribute("data-state", "$state_code");
-                    sipScript.setAttribute("src", "https://cdn.ywxi.net/js/conversion.js");
-                    document.getElementsByTagName("head")[0].appendChild(sipScript);
-                })();
-            </script>
-EOT;
-    }
-
-    public static function install_woocommerce() {
-        add_action('woocommerce_thankyou', 'Trustedsite::inject_sip_modal');
+        ?>
+        <script type="text/javascript">
+            (function() {
+                var sipScript = document.createElement('script');
+                sipScript.setAttribute("class", "trustedsite-track-conversion");
+                sipScript.setAttribute("type", "text/javascript");
+                sipScript.setAttribute("data-type", "purchase");
+                sipScript.setAttribute("data-orderid", <?php echo wp_json_encode( (string) $order_id ); ?>);
+                sipScript.setAttribute("data-email", <?php echo wp_json_encode( $email ); ?>);
+                sipScript.setAttribute("data-firstname", <?php echo wp_json_encode( $first_name ); ?>);
+                sipScript.setAttribute("data-lastname", <?php echo wp_json_encode( $last_name ); ?>);
+                sipScript.setAttribute("data-country", <?php echo wp_json_encode( $country_code ); ?>);
+                sipScript.setAttribute("data-state", <?php echo wp_json_encode( $state_code ); ?>);
+                sipScript.setAttribute("src", "https://cdn.ywxi.net/js/conversion.js");
+                document.getElementsByTagName("head")[0].appendChild(sipScript);
+            })();
+        </script>
+        <?php
     }
 
     public static function deactivate() {
-        delete_option("trustedsite_active");
+        Trustedsite::ping_event( 'deactivate' );
         
-        Trustedsite::ping_event('deactivate');
+        delete_option( 'trustedsite_active' );
     }
 
     public static function uninstall() {
+        Trustedsite::ping_event('uninstall');
+        
         delete_option("trustedsite_active");
         delete_option("trustedsite_data");
         delete_option("trustedsite_site_id");
         delete_option("trustedsite_robots_enable");
         delete_option("trustedsite_install_ping_done");
-        
-        Trustedsite::ping_event('uninstall');
     }
 
     public static function mfes_engagement_trustmark_shortcode($atts = array()) {
@@ -295,24 +311,34 @@ EOT;
     }
 
     public static function add_plugin_settings_link($links) {
-        array_unshift( $links, '<a href="options-general.php?page=trustedsite-settings">Settings</a>' );
+        array_unshift( $links, '<a href="' . esc_url( admin_url( 'options-general.php?page=trustedsite-settings' ) ) . '">Settings</a>' );
         return $links;
     }
 
     public static function settings_page() {
-        require WP_PLUGIN_DIR . '/trustedsite/lib/settings_page.php';
+        if ( ! current_user_can( 'activate_plugins' ) ) {
+            wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'trustedsite' ) );
+        }
+
+        $settings_path = plugin_dir_path( __FILE__ ) . 'settings_page.php';
+        
+        if ( file_exists( $settings_path ) ) {
+            require_once $settings_path;
+        } else {
+            wp_die( esc_html__( 'Configuration template view file is missing.', 'trustedsite' ) );
+        }
     }
 
     public static function inject_code() {
-        echo <<<EOT
-            <script type="text/javascript">
-              (function() {
-                var sa = document.createElement('script'); sa.type = 'text/javascript'; sa.async = true;
-                sa.src = ('https:' == document.location.protocol ? 'https://' : 'http://') + 'cdn.ywxi.net/js/1.js';
-                var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(sa, s);
-              })();
-            </script>
-EOT;
+        ?>
+        <script type="text/javascript">
+          (function() {
+            var sa = document.createElement('script'); sa.type = 'text/javascript'; sa.async = true;
+            sa.src = ('https:' == document.location.protocol ? 'https://' : 'http://') + 'cdn.ywxi.net/js/1.js';
+            var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(sa, s);
+          })();
+        </script>
+        <?php
     }
 }
 

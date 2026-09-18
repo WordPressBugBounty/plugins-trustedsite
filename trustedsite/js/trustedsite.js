@@ -24,7 +24,8 @@ jQuery(function() {
     var apiUrl = apiBase + '/api/v2/site-lookup.json?host=' + encodeURIComponent(host);
     
     var websiteUrl = 'https://www.trustedsite.com';
-    var urlBase = websiteUrl + '/user/site/' + host;
+    var trustedSiteOrigin = new URL(websiteUrl).origin;
+    var urlBase = websiteUrl + '/user/site/' + encodeURIComponent(host);
     
     var exceedUrl = urlBase + '/upgrade';
     
@@ -80,7 +81,38 @@ jQuery(function() {
     }
 
     function setLinkText($el, linkText) {
-        $el.find(".link").html(linkText);
+        var safeHref = normalizeTrustedSiteUrl(linkText);
+        if (!safeHref) {
+            return;
+        }
+        
+        var $link = jQuery('<a>')
+        .attr('href', safeHref)
+        .attr('target', '_blank')
+        .attr('rel', 'noopener noreferrer')
+        .css('text-decoration', 'none');
+        
+        $el.wrapAll($link);
+    }
+        
+    function setStatusIcon($el, iconClass) {
+        var $icon = jQuery('<i>')
+        .addClass('fa')
+        .addClass(iconClass);
+        
+        $el.find('.status-icon').empty().append($icon);
+    }
+    
+    function normalizeTrustedSiteUrl(href) {
+        try {
+            var url = new URL(href, websiteUrl);
+            if (url.protocol !== 'https:' || url.origin !== trustedSiteOrigin) {
+                return null;
+            }
+            return url.href;
+        } catch (e) {
+            return null;
+        }
     }
 
     function setLinkHref($el, href) {
@@ -89,19 +121,19 @@ jQuery(function() {
     }
 
     function checkIcon($el) {
-        $el.find('.status-icon').html('<i class="fa fa-check-circle"></i>');
+        setStatusIcon($el, 'fa-check-circle');
     }
 
     function warningIcon($el) {
-        $el.find('.status-icon').html('<i class="fa fa-warning"></i>');
+        setStatusIcon($el, 'fa-warning');
     }
 
     function circleIcon($el) {
-        $el.find('.status-icon').html('<i class="fa fa-circle-thin"></i>');
+        setStatusIcon($el, 'fa-circle-thin');
     }
 
     function lockIcon($el) {
-        $el.find('.status-icon').html('<i class="fa fa-lock"></i>');
+        setStatusIcon($el, 'fa-lock');
     }
 
     function updateCert($row, status) {
@@ -123,7 +155,7 @@ jQuery(function() {
     }
     
     function renderCertSecure(data) {
-        $row = jQuery('#certified-secure');
+        var $row = jQuery('#certified-secure');
         var status;
         if (data['lite'] && data['lite']['visit_limit_exceeded'] == 1) status = 'exceed';
         else status = data['certs']['secure']['status'];
@@ -132,7 +164,7 @@ jQuery(function() {
     }
     
     function renderCertVerifiedBusiness(data) {
-        $row = jQuery('#verified-business');
+        var $row = jQuery('#verified-business');
         var status;
         if (data['lite'] && data['lite']['visit_limit_exceeded'] == 1) status = 'exceed';
         else status = data['certs']['business']['status'];
@@ -141,35 +173,35 @@ jQuery(function() {
     }
     
     function renderCertIssueFreeOrders(data) {
-        $row = jQuery('#issue-free-orders');
+        var $row = jQuery('#issue-free-orders');
         var status = data['certs']['ifo']['status'];
         updateCert($row, status);
         setLinkHref($row, certIssueFreeOrdersUrl);
     }
     
     function renderCertShopperIdentityProtection(data) {
-        $row = jQuery('#shopper-identity-protection');
+        var $row = jQuery('#shopper-identity-protection');
         var status = data['certs']['sip']['status'];
         updateCert($row, status);
         setLinkHref($row, certShopperIdentityProtectionUrl);
     }
     
     function renderCertSpamFree(data) {
-        $row = jQuery('#spam-free');
+        var $row = jQuery('#spam-free');
         var status = data['certs']['inbox']['status'];
         updateCert($row, status);
         setLinkHref($row, certSpamFreeUrl);
     }
     
     function renderCertDataProtection(data) {
-        $row = jQuery('#data-protection');
+        var $row = jQuery('#data-protection');
         var status = data['certs']['ssl']['status'];
         updateCert($row, status);
         setLinkHref($row, certDataProtectionUrl);
     }
     
     function renderCertTrustedReviews(data) {
-        $row = jQuery('#trusted-reviews');
+        var $row = jQuery('#trusted-reviews');
         var status = data['certs']['reviews']['status'];
         updateCert($row, status);
         setLinkHref($row, certTrustedReviewsUrl);
@@ -200,7 +232,7 @@ jQuery(function() {
     }
     
     function renderTrustmarkFloating(data) {
-        $row = jQuery('#floating-tm');
+        var $row = jQuery('#floating-tm');
         var status;
         if (data['lite'] && data['lite']['visit_limit_exceeded'] == 1) status = 'exceed';
         else status = data['tms']['float']['status'];
@@ -209,28 +241,28 @@ jQuery(function() {
     }
     
     function renderTrustmarkEngagement(data) {
-        $row = jQuery('#engagement-tm');
+        var $row = jQuery('#engagement-tm');
         var status = data['tms']['engagement']['status'];
         updateTrustmark($row, status);
         setLinkHref($row, tmEngagementUrl);
     }
     
     function renderTrustmarkShopperIdentityProtection(data) {
-        $row = jQuery('#shopper-identity-protection-tm');
+        var $row = jQuery('#shopper-identity-protection-tm');
         var status = data['tms']['sip']['status'];
         updateTrustmark($row, status);
         setLinkHref($row, tmShopperIdentityProtectionUrl);
     }
     
     function renderTrustmarkTestimonials(data) {
-        $row = jQuery('#testimonials-tm');
+        var $row = jQuery('#testimonials-tm');
         var status = data['tms']['testimonials']['status'];
         updateTrustmark($row, status);
         setLinkHref($row, tmTestimonialsUrl);
     }
     
     function renderTrustmarkBanner(data) {
-        $row = jQuery('#banner-tm');
+        var $row = jQuery('#banner-tm');
         var status = data['tms']['banner']['status'];
         updateTrustmark($row, status);
         setLinkHref($row, tmBannerUrl);
@@ -245,29 +277,26 @@ jQuery(function() {
     }
     
     function renderSetupMainCode() {
-        $row = jQuery('#setup-main-code');
+        var $row = jQuery('#setup-main-code');
         checkIcon($row);
-        var strike = "<s></s>"
-        $row.wrapInner(strike);
+        $row.wrapInner(jQuery('<s>'));
         setLinkHref($row, setUpMainCodeUrl);
         $row.attr('title', 'This script has been automatically installed by our plugin. The TrustedSite portal will reflect this within a few minutes of the script detecting traffic from your site.');
     }
     
     function renderSetupConversionTracking() {
-        $row = jQuery('#setup-conversion-tracking');
+        var $row = jQuery('#setup-conversion-tracking');
         checkIcon($row);
-        var strike = "<s></s>"
-        $row.wrapInner(strike);
+        $row.wrapInner(jQuery('<s>'));
         setLinkHref($row, setUpConversionTrackingUrl);
         $row.attr('title', 'This script has been automatically installed by our plugin for use with WooCommerce. The TrustedSite portal will reflect this within a few minutes of the script detecting a conversion from your site.');
     }
     
     function renderSetupDirectory(data) {
-        $row = jQuery('#setup-directory-listing');
+        var $row = jQuery('#setup-directory-listing');
         var status = data['directory']['complete'];
         if (status == '1') {
-            var strike = "<s></s>"
-            $row.wrapInner(strike);
+            $row.wrapInner(jQuery('<s>'));
             checkIcon($row);
         } else if (status == '0') {
             circleIcon($row);
@@ -285,23 +314,47 @@ jQuery(function() {
     
     function renderUsage(data) {
         if (data['pro'] == 0 && data['lite']) {
-            $meter = jQuery('#usage-meter');
-            $text = jQuery('#usage-text');
-            
-            var limit = data['lite']['visit_limit'];
-            var current = data['lite']['visit_count'];
-            var exceeded = data['lite']['visit_limit_exceeded'];
-            
-            if(exceeded == '1') {
-                $text.html('<span class="status-icon"></span>You\'ve exceeded your monthly limit. To continue displaying the trustmark, <a class="blue-link" href="' + exceedUrl + '">upgrade today</a>.');
-                $text.css("text-align", "center");
-            } else if (exceeded == '0') {
+            var $meter = jQuery('#usage-meter');
+            var $text = jQuery('#usage-text');
+
+            var limit = Number(data['lite']['visit_limit']);
+            var current = Number(data['lite']['visit_count']);
+            var exceeded = Number(data['lite']['visit_limit_exceeded']);
+
+            if (!Number.isFinite(limit) || !Number.isFinite(current) || !Number.isFinite(exceeded)) {
+                return;
+            }
+
+            $text.empty();
+            $text.append(jQuery('<span>').addClass('status-icon'));
+
+            if (exceeded === 1) {
+                var safeExceedUrl = normalizeTrustedSiteUrl(exceedUrl);
+
+                $text.append(document.createTextNode(
+                    "You've exceeded your monthly limit. To continue displaying the trustmark, "
+                ));
+
+                if (safeExceedUrl) {
+                    $text.append(
+                        jQuery('<a>')
+                            .addClass('blue-link')
+                            .attr('href', safeExceedUrl)
+                            .text('upgrade today')
+                    );
+                } else {
+                    $text.append(document.createTextNode('upgrade today'));
+                }
+
+                $text.append(document.createTextNode('.'));
+                $text.css('text-align', 'center');
+            } else if (exceeded === 0) {
                 $meter.attr({
-                    "max" : limit,
-                    "value" : current
+                    'max': limit,
+                    'value': current
                 });
                 
-                $text.html('<span class="status-icon"></span>' + current + "/" + limit + " visits used this month.");
+                $text.append(document.createTextNode(current + '/' + limit + ' visits used this month.'));
             }
         }
     }
@@ -331,7 +384,7 @@ jQuery(function() {
     }
     
     function renderAddOnSearchSubmission(data) {
-        $row = jQuery('#addons-search-submission');
+        var $row = jQuery('#addons-search-submission');
         var status = data['sitemap']['status'];
         updateAddon($row, status);
         setLinkHref($row, addOnSearchSubmissionUrl);
@@ -342,7 +395,7 @@ jQuery(function() {
     }
     
     function renderAddOnDiagnostics(data) {
-        $row = jQuery('#addons-diagnostics');
+        var $row = jQuery('#addons-diagnostics');
         var status = data['diagnostics']['status'];
         updateAddon($row, status);
         setLinkHref($row, addOnDiagnosticsUrl);
